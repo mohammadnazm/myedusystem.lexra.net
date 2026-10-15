@@ -88,15 +88,17 @@ require __DIR__ . '/../includes/sidebar.php';
       </div>
       <div class="col-md-6">
         <label class="form-label">Materials used</label>
-        <input type="text" name="materials" class="form-control" placeholder="e.g. Textbook chapter 4, whiteboard" required>
+        <input type="text" name="materials" class="form-control" placeholder="e.g. Textbook chapter 4, whiteboard" value="کتێب + سمارت بۆرد" required>
       </div>
       <div class="col-md-6">
         <label class="form-label">Methods used</label>
-        <input type="text" name="methods" class="form-control" placeholder="e.g. Lecture, group discussion" required>
+        <input type="text" name="methods" class="form-control" placeholder="e.g. Lecture, group discussion" value="میتۆدی گروپاد" required>
       </div>
       <div class="col-12">
         <label class="form-label">Contents / what was covered</label>
-        <textarea name="contents" class="form-control" rows="3" placeholder="Describe what you covered in this lesson..." required></textarea>
+        <textarea name="contents" class="form-control" rows="3" placeholder="Describe what you covered in this lesson..." required>٥ - دەقەی سەرەتا باسی دەرسی رابردوو 
+          
+        ٥ دەقەی کۆتایی پرسیار و وەلام</textarea>
       </div>
       <div class="col-12">
         <button type="submit" class="btn btn-brand"><i class="bi bi-plus-lg me-1"></i>Save report</button>
