@@ -1,0 +1,6 @@
+Third-party files bundled here so the site runs without any external CDN:
+
+- Bootstrap 5.3.3 (css + js bundle)        - MIT License          - https://getbootstrap.com
+- Bootstrap Icons 1.11.3 (css + fonts)     - MIT License          - https://icons.getbootstrap.com
+- Inter (variable font)                    - SIL OFL 1.1          - https://rsms.me/inter
+- Noto Sans Arabic (variable font)         - SIL OFL 1.1          - https://fonts.google.com/noto

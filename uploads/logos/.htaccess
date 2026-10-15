@@ -1,0 +1,17 @@
+# Unlike the rest of /uploads/, logo images are meant to be loaded directly
+# in <img> tags on every page, so this folder overrides the parent
+# folder's blanket deny. Logos aren't sensitive data (they're branding),
+# and stored filenames are randomized so they can't be guessed/enumerated.
+<IfModule mod_authz_core.c>
+    Require all granted
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Allow from all
+</IfModule>
+
+# Defense in depth: never execute anything in this folder as a script,
+# even though only validated images are ever saved here.
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
