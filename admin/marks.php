@@ -133,7 +133,7 @@ require __DIR__ . '/../includes/sidebar.php';
             <thead>
               <tr>
                 <th>Student</th>
-                <th>Quiz (/10)</th>
+                <th>Quiz (/5)</th>
                 <th>Participation (/10)</th>
                 <th>1st Term (/20)</th>
                 <th>2nd Term (/20)</th>
