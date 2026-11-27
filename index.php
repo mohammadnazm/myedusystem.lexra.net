@@ -10,6 +10,7 @@ if (current_role()) {
         'admin' => 'admin/dashboard.php',
         'teacher' => 'teacher/dashboard.php',
         'accountant' => 'accountant/dashboard.php',
+        'manager' => 'admin/dashboard.php',
         'student' => 'student/profile.php',
         default => 'index.php',
     };
@@ -113,6 +114,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 login_clear_failures($conn, $identifier);
                 login_as('accountant', (int)$accountant['id'], $accountant['full_name'], (int)$accountant['institute_id'], $accountant['institute_name']);
                     header('Location: ' . base_url('accountant/dashboard.php'));
+                    exit;
+                }
+            }
+        }
+
+        // 4b. Manager — admin-like, but never sees anything accounting-related
+        if (!$error) {
+            $stmt = $conn->prepare(
+                "SELECT m.*, i.name AS institute_name, i.is_active AS institute_active
+                 FROM managers m
+                 JOIN institutes i ON i.id = m.institute_id
+                 WHERE m.username = ? AND m.is_active = 1"
+            );
+            $stmt->bind_param('s', $identifier);
+            $stmt->execute();
+            $manager = $stmt->get_result()->fetch_assoc();
+
+            if ($manager && password_verify($password, $manager['password_hash'])) {
+                if (!(int)$manager['institute_active']) {
+                    $error = 'This institute account is currently inactive. Contact the platform owner.';
+                } else {
+                    login_clear_failures($conn, $identifier);
+                    login_as('manager', (int)$manager['id'], $manager['full_name'], (int)$manager['institute_id'], $manager['institute_name']);
+                    header('Location: ' . base_url('admin/dashboard.php'));
                     exit;
                 }
             }
