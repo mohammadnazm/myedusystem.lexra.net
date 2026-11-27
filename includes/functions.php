@@ -765,6 +765,10 @@ function delete_attendance_records_matching(mysqli $conn, int $instituteId, stri
  *  that teacher/admin account is later renamed or deleted. */
 function log_activity(mysqli $conn, int $instituteId, string $role, int $actorId, string $actorName, string $action): void
 {
+    // Managers reuse the admin pages, which log as 'admin' — record the real role instead.
+    if ($role === 'admin' && current_role() === 'manager') {
+        $role = 'manager';
+    }
     $stmt = $conn->prepare("INSERT INTO activity_log (institute_id, actor_role, actor_id, actor_name, action) VALUES (?, ?, ?, ?, ?)");
     $stmt->bind_param('isiss', $instituteId, $role, $actorId, $actorName, $action);
     $stmt->execute();
@@ -900,8 +904,8 @@ function resources_for_teacher(mysqli $conn, int $teacherId): array
 function resources_for_grade(mysqli $conn, int $departmentId, string $grade): array
 {
     $sql = "SELECT r.*, sub.name AS subject_name,
-                   COALESCE(t.full_name, a.full_name) AS uploader_name,
-                   IF(r.teacher_id IS NOT NULL, 'Teacher', 'Admin') AS uploader_role
+                   COALESCE(t.full_name, a.full_name, 'Staff') AS uploader_name,
+                   IF(r.teacher_id IS NOT NULL, 'Teacher', IF(r.admin_id IS NOT NULL, 'Admin', 'Manager')) AS uploader_role
             FROM resources r
             JOIN subjects sub ON sub.id = r.subject_id
             LEFT JOIN teachers t ON t.id = r.teacher_id
@@ -918,8 +922,8 @@ function resources_for_grade(mysqli $conn, int $departmentId, string $grade): ar
 function resources_all(mysqli $conn, int $instituteId): array
 {
     $sql = "SELECT r.*, sub.name AS subject_name, d.name AS department_name,
-                   COALESCE(t.full_name, a.full_name) AS uploader_name,
-                   IF(r.teacher_id IS NOT NULL, 'Teacher', 'Admin') AS uploader_role
+                   COALESCE(t.full_name, a.full_name, 'Staff') AS uploader_name,
+                   IF(r.teacher_id IS NOT NULL, 'Teacher', IF(r.admin_id IS NOT NULL, 'Admin', 'Manager')) AS uploader_role
             FROM resources r
             JOIN subjects sub ON sub.id = r.subject_id
             JOIN departments d ON d.id = r.department_id
@@ -2072,6 +2076,70 @@ function all_accountants(mysqli $conn, int $instituteId, string $search = ''): a
     $stmt->bind_param($types, ...$params);
     $stmt->execute();
     return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+}
+
+/* ---------------------- Managers (admin-like, no accounting) ---------------------- */
+
+/** True if a username is already used by an owner, admin, teacher or accountant (the login form tries them in that order). */
+function username_taken_elsewhere(mysqli $conn, string $username): bool
+{
+    foreach (['super_admins', 'admins', 'teachers', 'accountants'] as $table) {
+        $stmt = $conn->prepare("SELECT 1 FROM $table WHERE username = ? LIMIT 1");
+        $stmt->bind_param('s', $username);
+        $stmt->execute();
+        if ($stmt->get_result()->fetch_row()) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function manager_belongs_to_institute(mysqli $conn, int $managerId, int $instituteId): bool
+{
+    $stmt = $conn->prepare("SELECT id FROM managers WHERE id = ? AND institute_id = ?");
+    $stmt->bind_param('ii', $managerId, $instituteId);
+    $stmt->execute();
+    return (bool)$stmt->get_result()->fetch_assoc();
+}
+
+function get_manager(mysqli $conn, int $managerId, int $instituteId): ?array
+{
+    $stmt = $conn->prepare("SELECT * FROM managers WHERE id = ? AND institute_id = ?");
+    $stmt->bind_param('ii', $managerId, $instituteId);
+    $stmt->execute();
+    return $stmt->get_result()->fetch_assoc() ?: null;
+}
+
+function all_managers(mysqli $conn, int $instituteId, string $search = ''): array
+{
+    $sql = "SELECT * FROM managers WHERE institute_id = ?";
+    $types = 'i';
+    $params = [$instituteId];
+    if ($search !== '') {
+        $sql .= " AND (full_name LIKE ? OR username LIKE ?)";
+        $types .= 'ss';
+        $like = '%' . $search . '%';
+        $params[] = $like;
+        $params[] = $like;
+    }
+    $sql .= " ORDER BY full_name";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param($types, ...$params);
+    $stmt->execute();
+    return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+}
+
+/** SQL fragment (+ params) that hides accounting-related activity-log rows from managers. */
+function activity_log_hide_accounting_sql(): array
+{
+    $patterns = ['%payment%', '%accountant%', '%discount%', '%price%', '%receipt%', '%balance%', '%fees%'];
+    $parts = ["actor_role <> 'accountant'"];
+    $params = [];
+    foreach ($patterns as $p) {
+        $parts[] = 'action NOT LIKE ?';
+        $params[] = $p;
+    }
+    return ['(' . implode(' AND ', $parts) . ')', $params, str_repeat('s', count($params))];
 }
 
 /** Every priced (department, grade) row for one institute. */
