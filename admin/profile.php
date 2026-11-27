@@ -2,9 +2,10 @@
 require __DIR__ . '/../config/db.php';
 require __DIR__ . '/../includes/auth.php';
 require __DIR__ . '/../includes/functions.php';
-require_role('admin');
+require_role('admin', 'manager');
 
 $adminId = current_user_id();
+$accountTable = current_role() === 'manager' ? 'managers' : 'admins';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_verify();
@@ -12,7 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $new = $_POST['new_password'] ?? '';
     $confirm = $_POST['confirm_password'] ?? '';
 
-    $stmt = $conn->prepare("SELECT password_hash FROM admins WHERE id = ?");
+    $stmt = $conn->prepare("SELECT password_hash FROM $accountTable WHERE id = ?");
     $stmt->bind_param('i', $adminId);
     $stmt->execute();
     $row = $stmt->get_result()->fetch_assoc();
@@ -25,10 +26,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         flash_set('danger', 'New password and confirmation do not match.');
     } else {
         $hash = password_hash($new, PASSWORD_DEFAULT);
-        $update = $conn->prepare("UPDATE admins SET password_hash = ? WHERE id = ?");
+        $update = $conn->prepare("UPDATE $accountTable SET password_hash = ? WHERE id = ?");
         $update->bind_param('si', $hash, $adminId);
         $update->execute();
-        log_activity($conn, current_institute_id(), 'admin', $adminId, current_user_name(), 'Changed their own password');
+        log_activity($conn, current_institute_id(), current_role(), $adminId, current_user_name(), 'Changed their own password');
         flash_set('success', 'Password updated.');
     }
     header('Location: ' . base_url('admin/profile.php'));
