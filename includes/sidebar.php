@@ -17,6 +17,7 @@ $navByRole = [
         ['key' => 'payments',   'label' => 'Payments',     'icon' => 'bi-receipt',      'href' => base_url('admin/payments.php')],
         ['key' => 'accounting', 'label' => 'Fees & Discounts', 'icon' => 'bi-cash-coin', 'href' => base_url('admin/accounting.php')],
         ['key' => 'accountants','label' => 'Accountants',  'icon' => 'bi-person-badge', 'href' => base_url('admin/accountants.php')],
+        ['key' => 'managers',   'label' => 'Managers',     'icon' => 'bi-person-gear',  'href' => base_url('admin/managers.php')],
         ['key' => 'activity',   'label' => 'Activity Log', 'icon' => 'bi-clock-history', 'href' => base_url('admin/activity.php')],
         ['key' => 'profile',    'label' => 'My Profile',   'icon' => 'bi-person-circle','href' => base_url('admin/profile.php')],
     ],
@@ -45,10 +46,19 @@ $navByRole = [
     ],
 ];
 
+// Managers use the admin pages, minus everything money-related (and minus account management).
+$navByRole['manager'] = array_values(array_filter(
+    $navByRole['admin'],
+    fn($item) => !in_array($item['key'], ['payments', 'accounting', 'accountants', 'managers'], true)
+));
+if (current_role() === 'manager' && $role === 'admin') {
+    $role = 'manager';
+}
+
 $navItems = $navByRole[$role] ?? [];
-$roleLabel = ['admin' => 'Administrator', 'teacher' => 'Teacher', 'student' => 'Student', 'owner' => 'Platform Owner', 'accountant' => 'Accountant'][$role] ?? '';
+$roleLabel = ['admin' => 'Administrator', 'teacher' => 'Teacher', 'student' => 'Student', 'owner' => 'Platform Owner', 'accountant' => 'Accountant', 'manager' => 'Manager'][$role] ?? '';
 $flash = flash_get();
-$logoUrl = in_array($role, ['admin', 'teacher', 'student', 'accountant'], true) ? institute_logo_url($conn, current_institute_id()) : null;
+$logoUrl = in_array($role, ['admin', 'manager', 'teacher', 'student', 'accountant'], true) ? institute_logo_url($conn, current_institute_id()) : null;
 ?>
 <div class="app-shell">
   <aside class="app-sidebar">
