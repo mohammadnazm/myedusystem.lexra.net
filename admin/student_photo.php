@@ -8,7 +8,7 @@ ob_start();
 require __DIR__ . '/../config/db.php';
 require __DIR__ . '/../includes/auth.php';
 require __DIR__ . '/../includes/functions.php';
-require_role('admin');
+require_role('admin', 'manager');
 
 $instituteId = current_institute_id();
 $studentId = (int)($_GET['id'] ?? 0);
