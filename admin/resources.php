@@ -2,12 +2,13 @@
 require __DIR__ . '/../config/db.php';
 require __DIR__ . '/../includes/auth.php';
 require __DIR__ . '/../includes/functions.php';
-require_role('admin');
+require_role('admin', 'manager');
 
 const MAX_FILE_BYTES = 20 * 1024 * 1024; // 20 MB
 
 $instituteId = current_institute_id();
-$adminId = current_user_id();
+$adminId = current_role() === 'manager' ? null : current_user_id(); // resources.admin_id points at the admins table
+$actorId = (int)current_user_id();
 $uploadDir = __DIR__ . '/../uploads/resources/';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['form'] ?? '') === 'upload') {
@@ -47,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['form'] ?? '') === 'upload'
 
                 if (move_uploaded_file($file['tmp_name'], $destination)) {
                     save_resource($conn, null, $adminId, $departmentId, $grade, $subjectId, $title, $file['name'], $storedFilename, (int)$file['size']);
-                    log_activity($conn, $instituteId, 'admin', $adminId, current_user_name(), "Uploaded a PDF resource: \"$title\"");
+                    log_activity($conn, $instituteId, 'admin', $actorId, current_user_name(), "Uploaded a PDF resource: \"$title\"");
                     flash_set('success', 'PDF uploaded — visible to every group in that grade now.');
                 } else {
                     flash_set('danger', 'Upload failed. Check that the uploads/resources folder is writable on the server.');
@@ -67,7 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['form'] ?? '') === 'delete'
         $resource = delete_resource($conn, $id);
         if ($resource) {
             @unlink($uploadDir . $resource['stored_filename']);
-            log_activity($conn, $instituteId, 'admin', $adminId, current_user_name(), "Deleted resource \"{$resource['title']}\"");
+            log_activity($conn, $instituteId, 'admin', $actorId, current_user_name(), "Deleted resource \"{$resource['title']}\"");
             flash_set('success', 'Resource deleted.');
         }
     }
