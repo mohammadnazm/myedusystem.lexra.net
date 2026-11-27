@@ -2,7 +2,7 @@
 require __DIR__ . '/../config/db.php';
 require __DIR__ . '/../includes/auth.php';
 require __DIR__ . '/../includes/functions.php';
-require_role('admin');
+require_role('admin', 'manager');
 
 const MAX_FORM_BYTES = 15 * 1024 * 1024; // 15 MB
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024; // 5 MB
@@ -135,7 +135,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             log_activity($conn, $instituteId, 'admin', current_user_id(), current_user_name(), "Deleted student \"$studentName\" (ID $id, was in " . class_section_label($before) . ")");
             flash_set('success', 'Student deleted.');
         }
-    } elseif ($action === 'delete_all') {
+    } elseif ($action === 'delete_all' && current_role() === 'admin') {
         $expectedPhrase = 'DELETE ALL STUDENTS';
         $confirmPhrase = trim($_POST['confirm_phrase'] ?? '');
         $confirmPassword = $_POST['confirm_password'] ?? '';
@@ -481,7 +481,7 @@ $citizenships = STUDENT_CITIZENSHIPS;
         <div class="d-flex gap-2 flex-wrap">
           <a href="<?= base_url('admin/students_export.php') ?>?<?= http_build_query(['department_id' => $filterDept ?: null, 'grade' => $filterGrade ?: null, 'section' => $filterSection ?: null, 'status' => $filterStatus ?: null, 'q' => $search ?: null]) ?>" class="btn btn-sm btn-outline-secondary"><i class="bi bi-file-earmark-excel me-1"></i>Export to Excel</a>
           <a href="<?= base_url('admin/students_import.php') ?>" class="btn btn-sm btn-outline-secondary"><i class="bi bi-upload me-1"></i>Import from Excel</a>
-          <?php if ($students): ?>
+          <?php if ($students && current_role() === 'admin'): ?>
             <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteAllModal"><i class="bi bi-exclamation-triangle me-1"></i>Delete all students</button>
           <?php endif; ?>
         </div>
@@ -582,7 +582,7 @@ $citizenships = STUDENT_CITIZENSHIPS;
   </div>
 </div>
 
-<?php if ($students): ?>
+<?php if ($students && current_role() === 'admin'): ?>
 <div class="modal fade" id="deleteAllModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
     <form method="post" class="modal-content" id="deleteAllForm">
