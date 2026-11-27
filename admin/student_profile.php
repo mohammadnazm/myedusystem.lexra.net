@@ -2,7 +2,7 @@
 require __DIR__ . '/../config/db.php';
 require __DIR__ . '/../includes/auth.php';
 require __DIR__ . '/../includes/functions.php';
-require_role('admin');
+require_role('admin', 'manager');
 
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024; // 5 MB
 const MAX_PROFILE_FORM_BYTES = 15 * 1024 * 1024; // 15 MB
@@ -239,7 +239,9 @@ require __DIR__ . '/../includes/sidebar.php';
     <?php if ($institute && $institute['profile_template_stored_filename']): ?>
       <a href="<?= base_url('admin/download_profile_template.php') ?>" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="bi bi-file-earmark-pdf text-danger me-1"></i>Blank form template</a>
     <?php endif; ?>
+    <?php if (current_role() === 'admin'): ?>
     <a href="<?= base_url('admin/student_payments.php') ?>?id=<?= $studentId ?>" class="btn btn-sm btn-outline-secondary"><i class="bi bi-receipt me-1"></i>Fees &amp; payments</a>
+    <?php endif; ?>
     <button type="button" class="btn btn-sm btn-outline-secondary" onclick="window.print()"><i class="bi bi-printer me-1"></i>Print</button>
     <?php if ($editMode): ?>
       <a href="<?= base_url('admin/student_profile.php') ?>?id=<?= $studentId ?>" class="btn btn-sm btn-outline-secondary"><i class="bi bi-eye me-1"></i>View</a>
