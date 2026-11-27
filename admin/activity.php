@@ -2,7 +2,7 @@
 require __DIR__ . '/../config/db.php';
 require __DIR__ . '/../includes/auth.php';
 require __DIR__ . '/../includes/functions.php';
-require_role('admin');
+require_role('admin', 'manager');
 
 $instituteId = current_institute_id();
 
@@ -23,7 +23,16 @@ $where = ['institute_id = ?'];
 $types = 'i';
 $params = [$instituteId];
 
-if (in_array($roleFilter, ['admin', 'teacher', 'accountant'], true)) {
+$isManager = current_role() === 'manager';
+if ($isManager) {
+    // Managers never see anything accounting-related, not even in the history.
+    [$hideSql, $hideParams, $hideTypes] = activity_log_hide_accounting_sql();
+    $where[] = $hideSql;
+    $types .= $hideTypes;
+    array_push($params, ...$hideParams);
+}
+$allowedRoleFilters = $isManager ? ['admin', 'manager', 'teacher'] : ['admin', 'manager', 'teacher', 'accountant'];
+if (in_array($roleFilter, $allowedRoleFilters, true)) {
     $where[] = 'actor_role = ?';
     $types .= 's';
     $params[] = $roleFilter;
@@ -63,7 +72,7 @@ $listStmt->execute();
 $rows = $listStmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
 $pageTitle = 'Activity Log';
-$role = 'admin';
+$role = current_role() === 'manager' ? 'manager' : 'admin';
 $activePage = 'activity';
 require __DIR__ . '/../includes/header.php';
 require __DIR__ . '/../includes/sidebar.php';
@@ -107,7 +116,10 @@ $presets = [
           <option value="">All roles</option>
           <option value="admin" <?= $roleFilter === 'admin' ? 'selected' : '' ?>>Admin</option>
           <option value="teacher" <?= $roleFilter === 'teacher' ? 'selected' : '' ?>>Teacher</option>
+          <option value="manager" <?= $roleFilter === 'manager' ? 'selected' : '' ?>>Manager</option>
+          <?php if (!$isManager): ?>
           <option value="accountant" <?= $roleFilter === 'accountant' ? 'selected' : '' ?>>Accountant</option>
+          <?php endif; ?>
         </select>
       </div>
       <div class="col-sm-6 col-md-3">
