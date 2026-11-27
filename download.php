@@ -15,7 +15,7 @@ if (!$resource) {
 $role = current_role();
 $allowed = false;
 
-if ($role === 'admin') {
+if ($role === 'admin' || $role === 'manager') {
     $allowed = department_belongs_to_institute($conn, (int)$resource['department_id'], current_institute_id());
 } elseif ($role === 'teacher') {
     $allowed = ((int)$resource['teacher_id'] === current_user_id())
